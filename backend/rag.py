@@ -1,8 +1,4 @@
-from sentence_transformers import SentenceTransformer
 import chromadb
-
-# Load the embedding model (turns text into vectors)
-embedder = SentenceTransformer("all-MiniLM-L6-v2")
 
 # Create a ChromaDB client (the vector database, stored in memory)
 chroma_client = chromadb.Client()
