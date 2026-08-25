@@ -1,5 +1,6 @@
 import math
 import json
+import socket
 import urllib.request
 import urllib.parse
 import urllib.error
@@ -11,6 +12,22 @@ from rag import search, movie_collection, places_collection
 # card at all. (We originally tried Google Places, but that requires
 # enabling billing even for free-tier usage, which isn't an option here.)
 OVERPASS_URL = "https://overpass-api.de/api/interpreter"
+
+# Render's containers don't have outbound IPv6 routing, but
+# overpass-api.de's DNS record includes an IPv6 (AAAA) address alongside
+# its IPv4 one. Python tries addresses in the order getaddrinfo returns
+# them, and when it picks the IPv6 one first the connection fails
+# immediately with "[Errno 101] Network is unreachable" — even though the
+# IPv4 address works fine. Forcing IPv4-only DNS resolution for the whole
+# process avoids that (this app has no other reason to prefer IPv6).
+_original_getaddrinfo = socket.getaddrinfo
+
+
+def _ipv4_only_getaddrinfo(host, port, family=0, type=0, proto=0, flags=0):
+    return _original_getaddrinfo(host, port, socket.AF_INET, type, proto, flags)
+
+
+socket.getaddrinfo = _ipv4_only_getaddrinfo
 
 # Maps common mood/activity keywords to OpenStreetMap tag categories.
 # OSM doesn't support free-text search like "romantic place" — it's a
