@@ -9,11 +9,32 @@ function App() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [location, setLocation] = useState(null);
   const chatEndRef = useRef(null);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
+
+  // Ask the browser for the user's location once, on load, so recommended
+  // places can be real nearby spots instead of a generic list. If the user
+  // denies permission (or their browser doesn't support it), we just quietly
+  // proceed without it — nothing else breaks.
+  useEffect(() => {
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setLocation({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+        });
+      },
+      () => {
+        setLocation(null);
+      },
+      { timeout: 8000 }
+    );
+  }, []);
 
   const sendMessage = async (overrideText) => {
     const text = overrideText ?? input;
@@ -26,7 +47,12 @@ function App() {
       const response = await fetch(`${API_URL}/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: text }),
+        body: JSON.stringify({
+          message: text,
+          ...(location
+            ? { latitude: location.latitude, longitude: location.longitude }
+            : {}),
+        }),
       });
       const data = await response.json();
       setMessages((prev) => [...prev, { role: "bot", text: data.reply }]);

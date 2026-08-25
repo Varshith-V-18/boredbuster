@@ -2,7 +2,7 @@ import os
 from dotenv import load_dotenv
 from langchain_groq import ChatGroq
 from langgraph.prebuilt import create_react_agent
-from tools import recommend_movie, recommend_places
+from tools import recommend_movie, recommend_places, recommend_nearby_places
 
 load_dotenv()
 
@@ -13,7 +13,7 @@ llm = ChatGroq(
 )
 
 # Put our tools in a list
-tools = [recommend_movie, recommend_places]
+tools = [recommend_movie, recommend_places, recommend_nearby_places]
 
 # Build the agent: give it the LLM + the tools
 agent = create_react_agent(llm, tools)
@@ -41,6 +41,13 @@ SYSTEM_PROMPT = (
     "come through, the way a person recommending something to a friend "
     "would. A short bullet list is fine occasionally if it genuinely helps "
     "readability, but prose should be your default. "
+    "When a tool returns several candidates, don't just recite the whole "
+    "list back — actually think about which one or two best fit what the "
+    "user specifically described (their exact mood, the occasion, any "
+    "details they mentioned), lead with your top pick and explain why it "
+    "fits them, and only mention the others if they're genuinely worth "
+    "offering as alternatives. You're making a judgment call for this "
+    "person, not printing a database dump. "
     "Always reply in English, no matter what language the user writes in — "
     "but keep movie and place titles in their original form (don't "
     "translate proper names). "
@@ -52,16 +59,36 @@ SYSTEM_PROMPT = (
     "asked for (e.g. they ask for a language outside the list above), say "
     "so plainly (e.g. \"I don't have any Korean movies in my list right "
     "now, but here are some other options\") — never present movies as "
-    "being in a language they aren't."
+    "being in a language they aren't. "
+    "For place recommendations, you have two tools: recommend_places (a "
+    "small curated fallback list) and recommend_nearby_places (real, live "
+    "places actually near the user right now, via Google). If the user's "
+    "message includes a bracketed note like \"[User's current location: "
+    "latitude=X, longitude=Y]\", always use recommend_nearby_places with "
+    "those exact coordinates instead of recommend_places — real nearby "
+    "results are always better than the generic list. If there's no such "
+    "location note, use recommend_places instead. Never mention or repeat "
+    "the bracketed location note itself in your reply."
 )
 
 
-# A function the server will call to get a response from the agent
-def get_response(user_message: str) -> str:
+# A function the server will call to get a response from the agent. If the
+# frontend was able to get the user's GPS location, latitude/longitude are
+# passed in here so the agent can use real nearby-places search instead of
+# the small fixed list.
+def get_response(user_message: str, latitude: float = None, longitude: float = None) -> str:
+    if latitude is not None and longitude is not None:
+        message_for_agent = (
+            f"[User's current location: latitude={latitude}, "
+            f"longitude={longitude}] {user_message}"
+        )
+    else:
+        message_for_agent = user_message
+
     result = agent.invoke({
         "messages": [
             ("system", SYSTEM_PROMPT),
-            ("user", user_message),
+            ("user", message_for_agent),
         ]
     })
     # The agent returns a list of messages; the last one is the final answer

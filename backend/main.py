@@ -1,4 +1,5 @@
 import os
+from typing import Optional
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -25,14 +26,18 @@ app.add_middleware(
 def on_startup():
     init_db()
 
-# Define what a chat message looks like coming in
+# Define what a chat message looks like coming in. latitude/longitude are
+# optional — the frontend only sends them if the user's browser granted
+# location permission, so the app works fine without them too.
 class ChatRequest(BaseModel):
     message: str
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
 
 # The endpoint the frontend calls
 @app.post("/chat")
 def chat(request: ChatRequest):
-    reply = get_response(request.message)
+    reply = get_response(request.message, request.latitude, request.longitude)
     save_message(request.message, reply)
     return {"reply": reply}
 
