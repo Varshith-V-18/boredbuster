@@ -7,3 +7,4 @@ langchain-groq
 langgraph
 chromadb
 psycopg2-binary
+langdetect
