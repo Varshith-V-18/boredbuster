@@ -49,11 +49,35 @@ LANGUAGE_NAMES = {
 }
 
 
+# Common words that show up constantly in this app's typical English
+# messages. If a message contains a couple of these, it's treated as English
+# right away without even asking the statistical detector — this is what
+# stops short/casual phrases like "can you can you suggest a movie" from
+# being misread as another language.
+ENGLISH_HINT_WORDS = {
+    "can", "you", "your", "suggest", "suggestion", "recommend",
+    "recommendation", "movie", "movies", "film", "films", "place", "places",
+    "mood", "bored", "boring", "feel", "feeling", "feels", "want", "wanna",
+    "give", "tell", "me", "please", "funny", "scary", "sad", "happy",
+    "tired", "good", "nice", "something", "anything", "what", "which",
+    "yeah", "yes", "no", "hi", "hello", "hey", "thanks", "thank", "watch",
+    "show", "shows", "go", "out", "today", "tonight", "now",
+}
+
+
 def detect_language(text: str) -> str:
     """Guess the language of the user's message. Falls back to English for
     short/ambiguous text, since single-word or very short messages ("hi",
     "ok") aren't reliably detectable and default English is the safest bet."""
-    if len(text.strip().split()) < 3:
+    words = text.strip().lower().split()
+    if len(words) < 3:
+        return "English"
+
+    # First check: does this look like a typical English message for this
+    # app? If so, skip the detector entirely — it's the biggest source of
+    # false positives on short phrases.
+    hint_count = sum(1 for w in words if w.strip(".,!?¿¡") in ENGLISH_HINT_WORDS)
+    if hint_count >= 2:
         return "English"
 
     try:
@@ -61,11 +85,9 @@ def detect_language(text: str) -> str:
     except LangDetectException:
         return "English"
 
-    # Only trust the detector when it's VERY confident. Short/casual English
-    # phrases (e.g. "can you can you suggest a movie") can fool the detector
-    # into a wrong high-ish guess, but genuine non-English sentences score
-    # 99%+ confidence in practice — so a high bar filters out the false
-    # positives while still catching real non-English messages.
+    # Only trust the detector when it's VERY confident. Genuine non-English
+    # sentences score 99%+ confidence in practice, so a high bar filters out
+    # false positives while still catching real non-English messages.
     if top_guess.prob >= 0.99:
         return LANGUAGE_NAMES.get(top_guess.lang, "English")
 
