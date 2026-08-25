@@ -111,6 +111,7 @@ def recommend_nearby_places(mood: str, latitude: float, longitude: float) -> str
     latitude and longitude are known from the conversation context (they'll
     appear in a bracketed note in the message). Pass the exact latitude and
     longitude given to you — don't guess or round them."""
+    print(f"[recommend_nearby_places] called with mood={mood!r} lat={latitude} lon={longitude}")
     tags = _pick_osm_tags(mood)
 
     # Group tags by OSM key so we can build one regex-alternation clause
@@ -142,12 +143,15 @@ def recommend_nearby_places(mood: str, latitude: float, longitude: float) -> str
     try:
         with urllib.request.urlopen(request, timeout=12) as response:
             data = json.loads(response.read().decode("utf-8"))
-    except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, ValueError):
+    except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, ValueError) as exc:
         # OpenStreetMap unreachable or timed out — degrade gracefully
-        # instead of breaking the conversation
+        # instead of breaking the conversation. Logged (not silently
+        # swallowed) so we can see the real cause in Render's logs.
+        print(f"[recommend_nearby_places] Overpass request failed: {type(exc).__name__}: {exc}")
         return _recommend_from_list(mood, places_collection, "places")
 
     elements = [e for e in data.get("elements", []) if e.get("tags", {}).get("name")]
+    print(f"[recommend_nearby_places] Overpass returned {len(data.get('elements', []))} raw elements, {len(elements)} named")
     if not elements:
         return (
             f"No real nearby places with a listed name were found for "
