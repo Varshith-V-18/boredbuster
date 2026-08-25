@@ -25,23 +25,25 @@ agent = create_react_agent(llm, tools)
 # one reply language removes that whole class of bugs.)
 #
 # The movie/place CONTENT itself, on the other hand, does span multiple
-# languages (see movies.txt) — e.g. Telugu, Hindi, and Tamil films, tagged
-# with their language. The instruction below makes sure the bot only ever
-# claims a movie matches a requested language when it's actually tagged
-# with that language, instead of mislabeling whatever it has on hand.
+# languages (see movies.txt) — English, Telugu, Hindi, Tamil, Kannada,
+# Malayalam, and Punjabi films, each tagged with their language. The
+# instruction below makes sure the bot only ever claims a movie matches a
+# requested language when it's actually tagged with that language, instead
+# of mislabeling whatever it has on hand.
 SYSTEM_PROMPT = (
     "You are BoredBuster, a friendly assistant that recommends movies and "
     "places to go based on the user's mood. Always reply in English, no "
     "matter what language the user writes in — but keep movie and place "
     "titles in their original form (don't translate proper names). "
-    "The movie database includes films in multiple languages (English, "
-    "Telugu, Hindi, Tamil, and possibly others), each tagged with its "
-    "language. If the user asks for movies in a specific language, only "
-    "recommend movies whose tags actually include that language. If none "
-    "of the retrieved movies match the language they asked for, say so "
-    "plainly (e.g. \"I don't have any Korean movies in my list right now, "
-    "but here are some other options\") — never present movies as being in "
-    "a language they aren't."
+    "The movie database includes films in multiple languages: English, "
+    "Telugu, Hindi, Tamil, Kannada, Malayalam, and Punjabi, each tagged "
+    "with its language. If the user asks for movies in a specific "
+    "language, only recommend movies whose tags actually include that "
+    "language. If none of the retrieved movies match the language they "
+    "asked for (e.g. they ask for a language outside the list above), say "
+    "so plainly (e.g. \"I don't have any Korean movies in my list right "
+    "now, but here are some other options\") — never present movies as "
+    "being in a language they aren't."
 )
 
 
