@@ -6,4 +6,3 @@ langchain-core
 langchain-groq
 langgraph
 psycopg2-binary
-langdetect

@@ -1,24 +1,39 @@
-The Hangover | comedy funny wild | A bachelor party in Las Vegas goes hilariously wrong when the groom goes missing.
-Superbad | comedy funny teen | Two high school friends navigate an awkward, laugh-filled night before graduation.
-Step Brothers | comedy silly absurd | Two grown men become stepbrothers and refuse to grow up, causing chaos.
-Bridesmaids | comedy funny friendship | A maid of honor spirals through wedding chaos in this sharp, raunchy comedy.
-Groundhog Day | comedy clever feel-good | A cynical weatherman relives the same day over and over until he changes.
-Hereditary | horror scary dark disturbing | A grieving family unravels after uncovering terrifying supernatural secrets.
-The Conjuring | horror scary supernatural | Paranormal investigators confront a demonic presence haunting a family farmhouse.
-A Quiet Place | horror thriller tense | A family survives in silence to avoid creatures that hunt by sound.
-Get Out | horror thriller smart | A young man uncovers a sinister secret during a weekend at his girlfriend's family home.
-The Exorcist | horror scary classic | A mother seeks help when her daughter is possessed by a demonic force.
-Inception | sci-fi action mind-bending | A thief who steals secrets through dreams takes on one final impossible job.
-Interstellar | sci-fi emotional epic | Explorers travel through a wormhole to save humanity from a dying Earth.
-The Matrix | sci-fi action classic | A hacker discovers reality is a simulation and joins a rebellion against machines.
-Mad Max Fury Road | action intense adrenaline | A high-octane chase across a post-apocalyptic wasteland.
-John Wick | action thriller stylish | A retired hitman seeks revenge in a sleek, action-packed world.
-The Notebook | romance emotional heartfelt | A poor young man and a rich woman fall in love across decades.
-La La Land | romance musical dreamy | An aspiring actress and a jazz musician chase their dreams and each other in LA.
-Pride and Prejudice | romance classic elegant | A spirited woman and a proud gentleman overcome misunderstandings to find love.
-Spirited Away | animation magical wholesome | A young girl navigates a spirit world to save her parents.
-Coco | animation heartfelt family | A boy journeys to the Land of the Dead to uncover his family's musical history.
-Toy Story | animation family feel-good | Toys come to life and learn about friendship and belonging.
-Parasite | thriller drama clever | A poor family schemes their way into a wealthy household with shocking results.
-Shutter Island | thriller mystery dark | A marshal investigates a psychiatric facility and questions his own sanity.
-Gone Girl | thriller mystery twisted | A man becomes the prime suspect when his wife mysteriously disappears.
+The Hangover | comedy funny wild english | A bachelor party in Las Vegas goes hilariously wrong when the groom goes missing.
+Superbad | comedy funny teen english | Two high school friends navigate an awkward, laugh-filled night before graduation.
+Step Brothers | comedy silly absurd english | Two grown men become stepbrothers and refuse to grow up, causing chaos.
+Bridesmaids | comedy funny friendship english | A maid of honor spirals through wedding chaos in this sharp, raunchy comedy.
+Groundhog Day | comedy clever feel-good english | A cynical weatherman relives the same day over and over until he changes.
+Hereditary | horror scary dark disturbing english | A grieving family unravels after uncovering terrifying supernatural secrets.
+The Conjuring | horror scary supernatural english | Paranormal investigators confront a demonic presence haunting a family farmhouse.
+A Quiet Place | horror thriller tense english | A family survives in silence to avoid creatures that hunt by sound.
+Get Out | horror thriller smart english | A young man uncovers a sinister secret during a weekend at his girlfriend's family home.
+The Exorcist | horror scary classic english | A mother seeks help when her daughter is possessed by a demonic force.
+Inception | sci-fi action mind-bending english | A thief who steals secrets through dreams takes on one final impossible job.
+Interstellar | sci-fi emotional epic english | Explorers travel through a wormhole to save humanity from a dying Earth.
+The Matrix | sci-fi action classic english | A hacker discovers reality is a simulation and joins a rebellion against machines.
+Mad Max Fury Road | action intense adrenaline english | A high-octane chase across a post-apocalyptic wasteland.
+John Wick | action thriller stylish english | A retired hitman seeks revenge in a sleek, action-packed world.
+The Notebook | romance emotional heartfelt english | A poor young man and a rich woman fall in love across decades.
+La La Land | romance musical dreamy english | An aspiring actress and a jazz musician chase their dreams and each other in LA.
+Pride and Prejudice | romance classic elegant english | A spirited woman and a proud gentleman overcome misunderstandings to find love.
+Spirited Away | animation magical wholesome english | A young girl navigates a spirit world to save her parents.
+Coco | animation heartfelt family english | A boy journeys to the Land of the Dead to uncover his family's musical history.
+Toy Story | animation family feel-good english | Toys come to life and learn about friendship and belonging.
+Parasite | thriller drama clever english | A poor family schemes their way into a wealthy household with shocking results.
+Shutter Island | thriller mystery dark english | A marshal investigates a psychiatric facility and questions his own sanity.
+Gone Girl | thriller mystery twisted english | A man becomes the prime suspect when his wife mysteriously disappears.
+Baahubali: The Beginning | action epic adventure telugu | A young man raised in exile discovers his royal legacy and rises to reclaim a kingdom from tyranny.
+Pushpa: The Rise | action drama gritty telugu | A daring laborer climbs through a red sandalwood smuggling syndicate through sheer grit and defiance.
+Arjun Reddy | drama intense romance telugu | A brilliant but self-destructive surgeon spirals into addiction after a painful breakup.
+Jersey | drama emotional sports telugu | A washed-up cricketer chases one last shot at glory to make his son proud.
+Ala Vaikunthapurramuloo | comedy funny family feel-good telugu | A young man discovers he was swapped at birth and sets out to reclaim his true family's legacy.
+Bhagavanth Kesari | action drama family telugu | A fierce guardian goes to great lengths to protect the family and honor of the people he loves.
+3 Idiots | comedy funny drama feel-good hindi | Two friends search for their long-lost college roommate while reflecting on what true success means.
+Dangal | drama sports inspiring hindi | A former wrestler trains his daughters to become world-class champions against social odds.
+Zindagi Na Milegi Dobara | comedy funny adventure friendship hindi | Three friends confront their fears and rediscover themselves on a road trip through Spain.
+Gully Boy | drama music inspiring hindi | A young man from the slums chases his dream of becoming a rapper against all odds.
+Andhadhun | thriller mystery clever hindi | A blind pianist gets entangled in a web of murder, lies, and deception.
+Vikram | action thriller intense tamil | An undercover agent unravels a deadly drug syndicate tied to a masked vigilante's killings.
+96 | romance emotional nostalgic tamil | Former classmates reconnect at a school reunion and revisit a love left unfinished.
+Soorarai Pottru | drama inspiring underdog tamil | An ambitious man fights relentless odds to build India's first low-cost airline.
+Jai Bhim | drama social justice tamil | A lawyer fights to uncover the truth behind a tribal man's wrongful imprisonment.
