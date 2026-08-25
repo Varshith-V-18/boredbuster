@@ -61,8 +61,12 @@ def detect_language(text: str) -> str:
     except LangDetectException:
         return "English"
 
-    # Only trust the detector when it's reasonably confident
-    if top_guess.prob >= 0.85:
+    # Only trust the detector when it's VERY confident. Short/casual English
+    # phrases (e.g. "can you can you suggest a movie") can fool the detector
+    # into a wrong high-ish guess, but genuine non-English sentences score
+    # 99%+ confidence in practice — so a high bar filters out the false
+    # positives while still catching real non-English messages.
+    if top_guess.prob >= 0.99:
         return LANGUAGE_NAMES.get(top_guess.lang, "English")
 
     return "English"
