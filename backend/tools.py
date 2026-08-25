@@ -11,7 +11,18 @@ from rag import search, movie_collection, places_collection
 # community-run, and needs NO API key, NO signup, and NO billing/credit
 # card at all. (We originally tried Google Places, but that requires
 # enabling billing even for free-tier usage, which isn't an option here.)
-OVERPASS_URL = "https://overpass-api.de/api/interpreter"
+#
+# The main overpass-api.de server actively refuses connections from a lot
+# of cloud/hosting IP ranges (Render included) to fight off bot abuse —
+# confirmed via Render's logs showing "[Errno 111] Connection refused"
+# even after fixing DNS/IPv6 routing. So instead of one URL, we try a
+# short list of independently-run public Overpass mirrors in order and
+# use whichever one actually answers.
+OVERPASS_URLS = [
+    "https://overpass.kumi.systems/api/interpreter",
+    "https://overpass.osm.ch/api/interpreter",
+    "https://overpass-api.de/api/interpreter",
+]
 
 # Render's containers don't have outbound IPv6 routing, but
 # overpass-api.de's DNS record includes an IPv6 (AAAA) address alongside
@@ -146,25 +157,28 @@ def recommend_nearby_places(mood: str, latitude: float, longitude: float) -> str
         )
 
     query = f"[out:json][timeout:12];({''.join(clauses)});out body 8;"
+    body = urllib.parse.urlencode({"data": query}).encode("utf-8")
+    headers = {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "User-Agent": "BoredBuster/1.0 (mood-based recommender app)",
+    }
 
-    request = urllib.request.Request(
-        OVERPASS_URL,
-        data=urllib.parse.urlencode({"data": query}).encode("utf-8"),
-        method="POST",
-        headers={
-            "Content-Type": "application/x-www-form-urlencoded",
-            "User-Agent": "BoredBuster/1.0 (mood-based recommender app)",
-        },
-    )
+    data = None
+    for url in OVERPASS_URLS:
+        request = urllib.request.Request(url, data=body, method="POST", headers=headers)
+        try:
+            with urllib.request.urlopen(request, timeout=12) as response:
+                data = json.loads(response.read().decode("utf-8"))
+            print(f"[recommend_nearby_places] Overpass mirror {url} succeeded")
+            break
+        except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, ValueError) as exc:
+            # This mirror is unreachable, refusing connections, or timed
+            # out — logged (not silently swallowed) and try the next one.
+            print(f"[recommend_nearby_places] Overpass mirror {url} failed: {type(exc).__name__}: {exc}")
 
-    try:
-        with urllib.request.urlopen(request, timeout=12) as response:
-            data = json.loads(response.read().decode("utf-8"))
-    except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, ValueError) as exc:
-        # OpenStreetMap unreachable or timed out — degrade gracefully
-        # instead of breaking the conversation. Logged (not silently
-        # swallowed) so we can see the real cause in Render's logs.
-        print(f"[recommend_nearby_places] Overpass request failed: {type(exc).__name__}: {exc}")
+    if data is None:
+        # Every mirror failed — degrade gracefully instead of breaking
+        # the conversation.
         return _recommend_from_list(mood, places_collection, "places")
 
     elements = [e for e in data.get("elements", []) if e.get("tags", {}).get("name")]
