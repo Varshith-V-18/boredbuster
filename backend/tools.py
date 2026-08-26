@@ -18,8 +18,15 @@ from rag import search, movie_collection, places_collection
 # even after fixing DNS/IPv6 routing. So instead of one URL, we try a
 # short list of independently-run public Overpass mirrors in order and
 # use whichever one actually answers.
+#
+# overpass.kumi.systems consistently times out on the TLS handshake from
+# Render (dropped, not just slow), so it's removed rather than eating 12s
+# on every request for nothing. overpass.osm.ch connects fine but returned
+# 0 elements for real Hyderabad coordinates where OSM data is definitely
+# not that sparse — maps.mail.ru's mirror is a well-established
+# full-planet mirror, tried first now.
 OVERPASS_URLS = [
-    "https://overpass.kumi.systems/api/interpreter",
+    "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
     "https://overpass.osm.ch/api/interpreter",
     "https://overpass-api.de/api/interpreter",
 ]
@@ -157,33 +164,42 @@ def recommend_nearby_places(mood: str, latitude: float, longitude: float) -> str
         )
 
     query = f"[out:json][timeout:12];({''.join(clauses)});out body 8;"
+    print(f"[recommend_nearby_places] query: {query}")
     body = urllib.parse.urlencode({"data": query}).encode("utf-8")
     headers = {
         "Content-Type": "application/x-www-form-urlencoded",
         "User-Agent": "BoredBuster/1.0 (mood-based recommender app)",
     }
 
-    data = None
+    elements = []
     for url in OVERPASS_URLS:
         request = urllib.request.Request(url, data=body, method="POST", headers=headers)
         try:
             with urllib.request.urlopen(request, timeout=12) as response:
                 data = json.loads(response.read().decode("utf-8"))
-            print(f"[recommend_nearby_places] Overpass mirror {url} succeeded")
-            break
         except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, ValueError) as exc:
             # This mirror is unreachable, refusing connections, or timed
             # out — logged (not silently swallowed) and try the next one.
             print(f"[recommend_nearby_places] Overpass mirror {url} failed: {type(exc).__name__}: {exc}")
+            continue
 
-    if data is None:
-        # Every mirror failed — degrade gracefully instead of breaking
-        # the conversation.
-        return _recommend_from_list(mood, places_collection, "places")
+        raw_elements = data.get("elements", [])
+        remark = data.get("remark")
+        remark_suffix = f", remark={remark!r}" if remark else ""
+        print(f"[recommend_nearby_places] Overpass mirror {url} responded: {len(raw_elements)} raw elements{remark_suffix}")
+        candidate = [e for e in raw_elements if e.get("tags", {}).get("name")]
+        if candidate:
+            # Got real, named results — use this mirror's answer and stop.
+            elements = candidate
+            break
+        # This mirror connected fine but returned nothing usable (empty
+        # data for this area, or a silent server-side error hidden in a
+        # 200 response) — try the next mirror instead of giving up.
+        print(f"[recommend_nearby_places] Overpass mirror {url} returned 0 named elements, trying next mirror")
 
-    elements = [e for e in data.get("elements", []) if e.get("tags", {}).get("name")]
-    print(f"[recommend_nearby_places] Overpass returned {len(data.get('elements', []))} raw elements, {len(elements)} named")
     if not elements:
+        # Every mirror failed or came back empty — degrade gracefully
+        # instead of breaking the conversation.
         return (
             f"No real nearby places with a listed name were found for "
             f"'{mood}'. Let the user know honestly, and offer a general "
