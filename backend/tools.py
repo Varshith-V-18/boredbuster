@@ -22,15 +22,72 @@ from rag import search, movie_collection, places_collection
 #
 # overpass.kumi.systems consistently times out on the TLS handshake from
 # Render (dropped, not just slow), so it's removed rather than eating 12s
-# on every request for nothing. overpass.osm.ch connects fine but returned
-# 0 elements for real Hyderabad coordinates where OSM data is definitely
-# not that sparse — maps.mail.ru's mirror is a well-established
-# full-planet mirror, tried first now.
+# on every request for nothing. overpass.osm.ch was removed entirely (not
+# just deprioritized): per the OpenStreetMap wiki, it's a Switzerland-only
+# regional instance, not a full-planet mirror, which is why it always
+# connected fine but returned 0 elements for Hyderabad — it was never
+# going to have that data, this wasn't flakiness. maps.mail.ru is a
+# well-established full-planet mirror, tried first.
 OVERPASS_URLS = [
     "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
-    "https://overpass.osm.ch/api/interpreter",
     "https://overpass-api.de/api/interpreter",
 ]
+
+# When every Overpass mirror above is unreachable or overloaded (this has
+# happened repeatedly on Render's free tier — see git history), fall back
+# to Photon (https://photon.komoot.io), a completely separate
+# OpenStreetMap-based search service run by Komoot: different codebase,
+# different infrastructure, so it tends to survive whatever is currently
+# taking down the public Overpass mirrors. It's a location-biased text
+# search rather than a strict radius query, so we still compute real
+# distances ourselves below and drop anything outside `radius`.
+PHOTON_URL = "https://photon.komoot.io/api/"
+
+
+def _query_photon_nearby(tags, latitude, longitude, radius):
+    """Photon-based fallback for recommend_nearby_places. Returns results
+    in the same shape as Overpass elements (tags/lat/lon) so the rest of
+    the function doesn't need to know which source they came from."""
+    seen = set()
+    results = []
+    for key, value in tags:
+        params = urllib.parse.urlencode({
+            "q": value.replace("_", " "),
+            "lat": latitude,
+            "lon": longitude,
+            "osm_tag": f"{key}:{value}",
+            "limit": 5,
+        })
+        url = f"{PHOTON_URL}?{params}"
+        request = urllib.request.Request(url, headers={"User-Agent": "BoredBuster/1.0"})
+        try:
+            with urllib.request.urlopen(request, timeout=8) as response:
+                data = json.loads(response.read().decode("utf-8"))
+        except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, ValueError) as exc:
+            print(f"[recommend_nearby_places] Photon query for {key}:{value} failed: {type(exc).__name__}: {exc}")
+            continue
+
+        for feature in data.get("features", []):
+            props = feature.get("properties", {})
+            name = props.get("name")
+            if not name:
+                continue
+            flon, flat = feature["geometry"]["coordinates"]
+            distance_m = _haversine_meters(latitude, longitude, flat, flon)
+            if distance_m > radius:
+                continue
+            dedupe_key = (name, round(flat, 4), round(flon, 4))
+            if dedupe_key in seen:
+                continue
+            seen.add(dedupe_key)
+            results.append({
+                "tags": {"name": name, key: props.get("osm_value", value)},
+                "lat": flat,
+                "lon": flon,
+            })
+
+    results.sort(key=lambda e: _haversine_meters(latitude, longitude, e["lat"], e["lon"]))
+    return results[:8]
 
 # Render's containers don't have outbound IPv6 routing, but
 # overpass-api.de's DNS record includes an IPv6 (AAAA) address alongside
@@ -199,8 +256,12 @@ def recommend_nearby_places(mood: str, latitude: float, longitude: float) -> str
         print(f"[recommend_nearby_places] Overpass mirror {url} returned 0 named elements, trying next mirror")
 
     if not elements:
-        # Every mirror failed or came back empty — degrade gracefully
-        # instead of breaking the conversation.
+        print("[recommend_nearby_places] all Overpass mirrors failed or returned nothing, trying Photon")
+        elements = _query_photon_nearby(tags, latitude, longitude, radius)
+
+    if not elements:
+        # Every mirror AND Photon failed or came back empty — degrade
+        # gracefully instead of breaking the conversation.
         return (
             f"No real nearby places with a listed name were found for "
             f"'{mood}'. Let the user know honestly, and offer a general "
