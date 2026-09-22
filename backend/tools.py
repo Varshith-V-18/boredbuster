@@ -1,3 +1,4 @@
+import os
 import math
 import json
 import socket
@@ -227,4 +228,59 @@ def recommend_nearby_places(mood: str, latitude: float, longitude: float) -> str
         "(from OpenStreetMap), not from a fixed list. Pick whichever fit "
         "best and recommend those, with your own reasoning, and mention "
         "how far away each one is."
+    )
+
+
+@tool
+def recommend_theater_movie(mood: str) -> str:
+    """Recommends movies CURRENTLY PLAYING IN THEATERS based on the user's mood,
+    using live data from TMDB. Use this when the user wants to watch a movie in a
+    theater/cinema, or wants to go OUT to watch a movie (as opposed to watching at
+    home). Returns real now-playing movies the user can book tickets for."""
+    print(f"[recommend_theater_movie] called with mood={mood!r}")
+    api_key = os.getenv("TMDB_API_KEY")
+    if not api_key:
+        return (
+            "The theater-movie service isn't configured right now. Let the user "
+            "know honestly, and offer to recommend a movie to watch at home instead."
+        )
+
+    url = (
+        "https://api.themoviedb.org/3/movie/now_playing"
+        f"?api_key={api_key}&language=en-US&page=1&region=IN"
+    )
+    request = urllib.request.Request(url, headers={"User-Agent": "BoredBuster/1.0"})
+    try:
+        with urllib.request.urlopen(request, timeout=12) as response:
+            data = json.loads(response.read().decode("utf-8"))
+    except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, ValueError) as exc:
+        print(f"[recommend_theater_movie] TMDB request failed: {type(exc).__name__}: {exc}")
+        return (
+            "Couldn't reach the live theater listings right now. Let the user know "
+            "honestly, and offer to recommend a movie to watch at home instead."
+        )
+
+    movies = data.get("results", [])
+    if not movies:
+        return (
+            "No movies currently in theaters were found. Let the user know honestly, "
+            "and offer a home movie recommendation instead."
+        )
+
+    lines = []
+    for m in movies[:8]:
+        title = m.get("title", "Unknown")
+        rating = m.get("vote_average", "N/A")
+        overview = (m.get("overview") or "")[:140]
+        query = urllib.parse.quote(title)
+        booking_link = f"https://in.bookmyshow.com/explore/movies?searchTerm={query}"
+        lines.append(f"{title} | rating {rating} | {overview} | Book: {booking_link}")
+
+    retrieved = "\n".join(lines)
+    return (
+        f"Here are REAL movies currently in theaters (live from TMDB) for mood "
+        f"'{mood}':\n{retrieved}\n\n"
+        "These are actually playing in cinemas right now. Pick the one or two that "
+        "best fit the user's mood, recommend them with your reasoning, and include "
+        "the Book link so they can book tickets. Only recommend from this list."
     )

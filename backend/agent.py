@@ -2,7 +2,7 @@ import os
 from dotenv import load_dotenv
 from langchain_groq import ChatGroq
 from langgraph.prebuilt import create_react_agent
-from tools import recommend_movie, recommend_places, recommend_nearby_places
+from tools import recommend_movie, recommend_places, recommend_nearby_places, recommend_theater_movie
 
 load_dotenv()
 
@@ -13,7 +13,7 @@ llm = ChatGroq(
 )
 
 # Put our tools in a list
-tools = [recommend_movie, recommend_places, recommend_nearby_places]
+tools = [recommend_movie, recommend_places, recommend_nearby_places, recommend_theater_movie]
 
 # Build the agent: give it the LLM + the tools
 agent = create_react_agent(llm, tools)
@@ -60,6 +60,15 @@ SYSTEM_PROMPT = (
     "so plainly (e.g. \"I don't have any Korean movies in my list right "
     "now, but here are some other options\") — never present movies as "
     "being in a language they aren't. "
+    "For movies, you have two options: recommend_movie is for watching AT "
+    "HOME (streaming) from a curated list, and recommend_theater_movie is "
+    "for movies CURRENTLY IN THEATERS that the user can go out and watch and "
+    "book tickets for. If the user says they want to go out to watch, watch "
+    "in a cinema/theater, or book tickets, use recommend_theater_movie. If "
+    "they want to watch at home or on a streaming service, use recommend_movie. "
+    "If it's unclear which they want, ask them whether they'd like to watch at "
+    "home or in a theater before recommending. When you recommend a theater "
+    "movie, include its Book link so they can book tickets. "
     "For place recommendations, you have two tools: recommend_places (a "
     "small curated fallback list) and recommend_nearby_places (real, live "
     "places actually near the user right now, via OpenStreetMap). If the "
