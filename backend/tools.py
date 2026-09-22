@@ -364,6 +364,16 @@ def recommend_theater_movie(mood: str) -> str:
             f"Book: {booking_link}"
         )
 
+    # TMDB's now_playing list is a genuinely incomplete picture of Indian
+    # theaters — it can miss real, currently-booking releases entirely
+    # (confirmed: "The Paradise" is live on BookMyShow but absent from this
+    # endpoint). So when the user named a SPECIFIC title that isn't in our
+    # list above, we still hand back a direct BookMyShow search link for
+    # that exact title rather than a dead end — just honestly caveated as
+    # unconfirmed, since we can't verify it's actually showing.
+    fallback_query = urllib.parse.quote(mood)
+    fallback_link = f"https://in.bookmyshow.com/explore/movies?searchTerm={fallback_query}"
+
     retrieved = "\n".join(lines)
     return (
         f"Here are REAL movies currently in theaters (live from TMDB) for mood "
@@ -375,5 +385,15 @@ def recommend_theater_movie(mood: str) -> str:
         "picking the closest-sounding title. Otherwise pick the one or two "
         "that best fit the user's mood, recommend them with your reasoning, "
         "and include the Book link so they can book tickets. Only recommend "
-        "from this list."
+        "from this list.\n\n"
+        f"IMPORTANT — if (and only if) the user named a SPECIFIC movie by "
+        f"title and it is NOT in the list above: our live data can miss real "
+        f"releases (it's known to be incomplete for Indian regional titles), "
+        f"so don't just tell them it doesn't exist. Instead say you don't see "
+        f"it in today's confirmed listings, but offer this direct BookMyShow "
+        f"search link in case it's actually playing: {fallback_link} — make "
+        f"clear this link is unconfirmed (not verified via live data), unlike "
+        f"the Book links above. Do NOT offer this fallback link for a vague, "
+        f"mood-based request (e.g. 'something funny') — only for a specific "
+        f"named title that came up empty."
     )
