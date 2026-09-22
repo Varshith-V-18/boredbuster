@@ -212,22 +212,31 @@ def recommend_nearby_places(mood: str, latitude: float, longitude: float) -> str
         name = element["tags"]["name"]
         category = element["tags"].get("amenity") or element["tags"].get("leisure") \
             or element["tags"].get("tourism") or element["tags"].get("shop") or ""
-        distance_m = _haversine_meters(
-            latitude, longitude, element["lat"], element["lon"]
-        )
+        elat, elon = element["lat"], element["lon"]
+        distance_m = _haversine_meters(latitude, longitude, elat, elon)
         distance_desc = (
             f"{distance_m:.0f}m away" if distance_m < 1000
             else f"{distance_m / 1000:.1f}km away"
         )
-        lines.append(f"{name} | {category} | {distance_desc}")
+        # A Google Maps search link for this exact place, built from its name
+        # plus its real coordinates (no API key needed for this — it's just a
+        # search URL, the same trick recommend_theater_movie uses for
+        # BookMyShow). This gets the user directions, hours, reviews, and,
+        # for places that take them, a reservation button straight from Maps
+        # — the closest thing to a real "book this" action without a paid
+        # reservations API (see the tools.py notes above on Google Places).
+        maps_query = urllib.parse.quote(f"{name} {elat},{elon}")
+        maps_link = f"https://www.google.com/maps/search/?api=1&query={maps_query}"
+        lines.append(f"{name} | {category} | {distance_desc} | Maps: {maps_link}")
 
     retrieved = "\n".join(lines)
     return (
         f"Here are REAL nearby places matching '{mood}':\n{retrieved}\n\n"
         "These are real, live places actually near the user right now "
         "(from OpenStreetMap), not from a fixed list. Pick whichever fit "
-        "best and recommend those, with your own reasoning, and mention "
-        "how far away each one is."
+        "best and recommend those, with your own reasoning, mention how far "
+        "away each one is, and include its Maps link so they can see it, "
+        "get directions, or reserve/book if the place supports that."
     )
 
 

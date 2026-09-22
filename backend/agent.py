@@ -77,7 +77,11 @@ SYSTEM_PROMPT = (
     "those exact coordinates instead of recommend_places — real nearby "
     "results are always better than the generic list. If there's no such "
     "location note, use recommend_places instead. Never mention or repeat "
-    "the bracketed location note itself in your reply."
+    "the bracketed location note itself in your reply. When you recommend "
+    "a place from recommend_nearby_places, include its Maps link so the "
+    "user can see it, get directions, or reserve/book there if the place "
+    "supports that — recommend_places (the generic fallback list) has no "
+    "such link since those aren't real, specific venues."
 )
 
 
