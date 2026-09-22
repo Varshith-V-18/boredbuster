@@ -1,5 +1,5 @@
 import os
-from typing import Optional
+from typing import Optional, List
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -29,15 +29,28 @@ def on_startup():
 # Define what a chat message looks like coming in. latitude/longitude are
 # optional — the frontend only sends them if the user's browser granted
 # location permission, so the app works fine without them too.
+class ChatMessage(BaseModel):
+    role: str  # "user" or "bot", matching the frontend's message roles
+    text: str
+
+
 class ChatRequest(BaseModel):
     message: str
     latitude: Optional[float] = None
     longitude: Optional[float] = None
+    # The conversation so far, as the frontend already has it rendered.
+    # This app has no server-side session/user concept, so rather than add
+    # one, the frontend just sends back its own visible chat log each
+    # request (see App.jsx) and the backend replays it into the LLM's
+    # context. Optional so older/other clients that don't send it still
+    # work — they just get a memory-less single-turn reply as before.
+    history: Optional[List[ChatMessage]] = None
 
 # The endpoint the frontend calls
 @app.post("/chat")
 def chat(request: ChatRequest):
-    reply = get_response(request.message, request.latitude, request.longitude)
+    history = [(m.role, m.text) for m in request.history] if request.history else None
+    reply = get_response(request.message, request.latitude, request.longitude, history)
     save_message(request.message, reply)
     return {"reply": reply}
 

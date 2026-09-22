@@ -49,6 +49,7 @@ function App() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           message: text,
+          history: messages.map(({ role, text }) => ({ role, text })),
           ...(location
             ? { latitude: location.latitude, longitude: location.longitude }
             : {}),

@@ -80,6 +80,20 @@ SYSTEM_PROMPT = (
     "If it's unclear which they want, ask them whether they'd like to watch at "
     "home or in a theater before recommending. When you recommend a theater "
     "movie, include its Book link so they can book tickets. "
+    "If the user names a SPECIFIC movie by title (e.g. 'irrumudi "
+    "tickets', 'do you have Tony?'), call the relevant tool (mood "
+    "can be the title itself, or anything — the tool ignores it for "
+    "filtering and just returns current candidates) and look for that "
+    "exact title in the results, rather than asking the user for their "
+    "mood again — they already told you what they want. If that title "
+    "isn't in the results, say so plainly instead of substituting a "
+    "different movie without saying so. "
+    "You have the recent conversation history above this message — use "
+    "it. If the user corrects something you said ('X is not really Y'), "
+    "references an earlier recommendation ('book that one', 'the first "
+    "option'), or is clearly continuing a prior exchange, resolve who "
+    "or what they mean from that history instead of treating their "
+    "message as a brand-new, standalone request. "
     "For place recommendations, you have two tools: recommend_places (a "
     "small curated fallback list) and recommend_nearby_places (real, live "
     "places actually near the user right now, via OpenStreetMap). If the "
@@ -100,7 +114,27 @@ SYSTEM_PROMPT = (
 # frontend was able to get the user's GPS location, latitude/longitude are
 # passed in here so the agent can use real nearby-places search instead of
 # the small fixed list.
-def get_response(user_message: str, latitude: float = None, longitude: float = None) -> str:
+# How many past chat turns (user + bot messages combined) to replay into
+# the LLM's context on each request. Every /chat call used to start a
+# completely fresh conversation with zero memory of anything said before
+# — which meant a correction like "X is not really Y" or a follow-up like
+# "book that one" made no sense to the agent, since it had no idea what
+# "that" or "X" referred to. Capping history (rather than sending the
+# whole conversation unbounded) keeps prompt size and Groq token usage
+# predictable as a chat grows long.
+MAX_HISTORY_MESSAGES = 12
+
+# The frontend's message roles ("user"/"bot") map to what LangChain
+# expects for a chat history ("user"/"assistant").
+_ROLE_MAP = {"user": "user", "bot": "assistant"}
+
+
+def get_response(
+    user_message: str,
+    latitude: float = None,
+    longitude: float = None,
+    history: list[tuple[str, str]] | None = None,
+) -> str:
     if latitude is not None and longitude is not None:
         message_for_agent = (
             f"[User's current location: latitude={latitude}, "
@@ -109,11 +143,12 @@ def get_response(user_message: str, latitude: float = None, longitude: float = N
     else:
         message_for_agent = user_message
 
-    result = agent.invoke({
-        "messages": [
-            ("system", SYSTEM_PROMPT),
-            ("user", message_for_agent),
-        ]
-    })
+    messages = [("system", SYSTEM_PROMPT)]
+    if history:
+        for role, text in history[-MAX_HISTORY_MESSAGES:]:
+            messages.append((_ROLE_MAP.get(role, "user"), text))
+    messages.append(("user", message_for_agent))
+
+    result = agent.invoke({"messages": messages})
     # The agent returns a list of messages; the last one is the final answer
     return result["messages"][-1].content
