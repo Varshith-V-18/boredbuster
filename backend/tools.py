@@ -337,20 +337,43 @@ def recommend_theater_movie(mood: str) -> str:
             "and offer a home movie recommendation instead."
         )
 
+    # TMDB tags every result with its actual original_language (ISO 639-1,
+    # e.g. "te" for Telugu, "en" for English) — we surface that as a real
+    # language tag so the agent can filter by requested language instead of
+    # guessing from the title alone. (That guessing is exactly what caused
+    # an English movie like "Tony" to once get mislabeled as Telugu.)
+    LANGUAGE_NAMES = {
+        "en": "English", "te": "Telugu", "hi": "Hindi", "ta": "Tamil",
+        "kn": "Kannada", "ml": "Malayalam", "pa": "Punjabi", "bn": "Bengali",
+        "mr": "Marathi", "gu": "Gujarati", "or": "Odia", "ar": "Arabic",
+        "ko": "Korean", "ja": "Japanese", "fr": "French", "es": "Spanish",
+        "zh": "Chinese",
+    }
+
     lines = []
-    for m in movies[:8]:
+    for m in movies[:20]:
         title = m.get("title", "Unknown")
         rating = m.get("vote_average", "N/A")
         overview = (m.get("overview") or "")[:140]
+        lang_code = m.get("original_language", "")
+        language = LANGUAGE_NAMES.get(lang_code, lang_code or "unknown")
         query = urllib.parse.quote(title)
         booking_link = f"https://in.bookmyshow.com/explore/movies?searchTerm={query}"
-        lines.append(f"{title} | rating {rating} | {overview} | Book: {booking_link}")
+        lines.append(
+            f"{title} | language: {language} | rating {rating} | {overview} | "
+            f"Book: {booking_link}"
+        )
 
     retrieved = "\n".join(lines)
     return (
         f"Here are REAL movies currently in theaters (live from TMDB) for mood "
         f"'{mood}':\n{retrieved}\n\n"
-        "These are actually playing in cinemas right now. Pick the one or two that "
-        "best fit the user's mood, recommend them with your reasoning, and include "
-        "the Book link so they can book tickets. Only recommend from this list."
+        "These are actually playing in cinemas right now. Each one's actual "
+        "language is included (from TMDB metadata, not a guess) — if the user "
+        "asked for a specific language, only recommend movies whose language "
+        "tag actually matches; if none match, say so honestly instead of "
+        "picking the closest-sounding title. Otherwise pick the one or two "
+        "that best fit the user's mood, recommend them with your reasoning, "
+        "and include the Book link so they can book tickets. Only recommend "
+        "from this list."
     )
