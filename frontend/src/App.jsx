@@ -1,6 +1,49 @@
 import { useState, useRef, useEffect } from "react";
 import "./App.css";
 
+// The bot's replies come back as plain text but use a bit of markdown —
+// **bold**, [label](url) links, and bare https:// URLs (e.g. the BookMyShow
+// / Google Maps links from the backend tools). The bubble previously just
+// dumped msg.text as a raw string, so none of that ever became clickable —
+// links just sat there as text a user had to manually select and copy.
+// This turns those specific patterns into real <a>/<strong> elements while
+// leaving all other text (and existing newlines, which CSS white-space:
+// pre-wrap already renders as line breaks) untouched.
+function renderMessageText(text) {
+  const pattern = /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)|\*\*([^*]+)\*\*|(https?:\/\/[^\s)]+)/g;
+  const nodes = [];
+  let lastIndex = 0;
+  let match;
+  let key = 0;
+
+  while ((match = pattern.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      nodes.push(text.slice(lastIndex, match.index));
+    }
+    const [, linkLabel, linkUrl, boldText, bareUrl] = match;
+    if (linkUrl !== undefined) {
+      nodes.push(
+        <a key={key++} href={linkUrl} target="_blank" rel="noopener noreferrer">
+          {linkLabel}
+        </a>
+      );
+    } else if (boldText !== undefined) {
+      nodes.push(<strong key={key++}>{boldText}</strong>);
+    } else if (bareUrl !== undefined) {
+      nodes.push(
+        <a key={key++} href={bareUrl} target="_blank" rel="noopener noreferrer">
+          {bareUrl}
+        </a>
+      );
+    }
+    lastIndex = pattern.lastIndex;
+  }
+  if (lastIndex < text.length) {
+    nodes.push(text.slice(lastIndex));
+  }
+  return nodes;
+}
+
 // In production, set VITE_API_URL in your hosting platform's env vars
 // to your deployed backend's URL (e.g. https://your-app.onrender.com).
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
@@ -93,7 +136,7 @@ function App() {
           {messages.map((msg, i) => (
             <div key={i} className={`message ${msg.role}`}>
               {msg.role === "bot" && <div className="avatar bot-avatar">🎬</div>}
-              <div className="bubble">{msg.text}</div>
+              <div className="bubble">{msg.role === "bot" ? renderMessageText(msg.text) : msg.text}</div>
               {msg.role === "user" && <div className="avatar user-avatar">🙂</div>}
             </div>
           ))}
